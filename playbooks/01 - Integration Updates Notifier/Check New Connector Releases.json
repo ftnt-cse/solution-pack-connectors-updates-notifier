@@ -1,0 +1,289 @@
+{
+    "@type": "Workflow",
+    "triggerLimit": null,
+    "name": "Check New Connector Releases",
+    "aliasName": null,
+    "tag": null,
+    "description": "Compute and Sends a list of connectors to upgrade via Email",
+    "isActive": true,
+    "debug": false,
+    "singleRecordExecution": false,
+    "remoteExecutableFlag": false,
+    "parameters": [],
+    "synchronous": false,
+    "lastModifyDate": 1643967400,
+    "collection": "\/api\/3\/workflow_collections\/9483fc47-005c-4f2b-970f-60e077789cf7",
+    "versions": [],
+    "triggerStep": "\/api\/3\/workflow_steps\/e465a6c8-dd73-45f2-95d3-91b0164cde49",
+    "steps": [
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute Email Body",
+            "description": null,
+            "arguments": {
+                "email_body": "{%if vars.upgradable_connectors|length >0%}<table style=\"border-collapse: collapse; width: 95.7692%; border-color: #e67e23; float: left;\" border=\"1\"><tbody><tr><td style=\"width: 33.2703%; text-align: center;\"><span style=\"color: #e67e23;\"><strong>Connector Name<\/strong><\/span><\/td><td style=\"width: 33.2703%; text-align: center;\"><span style=\"color: #e67e23;\"><strong>Current Version<\/strong><\/span><\/td><td style=\"width: 33.2703%; text-align: center;\"><span style=\"color: #e67e23;\"><strong>Upgrade Version<\/strong><\/span><\/td><\/tr>{%for entry in vars.upgradable_connectors%}<tr><td style=\"width: 33.2703%;\">&nbsp;{{entry.name}}<\/td><td style=\"width: 33.2703%;\">&nbsp;{{entry.current_version}}<\/td><td style=\"width: 33.2703%;\">&nbsp;{{entry.upgrade_version}}<\/td><\/tr>{%endfor%}<\/tbody><\/table>{%endif%}"
+            },
+            "status": null,
+            "top": "704",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "07661060-733b-41f5-aba9-3520b8c03f89",
+            "id": 14358
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Installed Connectors",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "iri": "https:\/\/{{globalVars.Server_fqhn}}\/api\/integration\/connectors\/?configured={{vars.configured_connectors}}&ordering=label&page_size=100",
+                    "body": "",
+                    "method": "GET"
+                },
+                "version": "3.2.0",
+                "connector": "cyops_utilities",
+                "operation": "make_cyops_request",
+                "operationTitle": "FSR: Make FortiSOAR API Call",
+                "step_variables": {
+                    "installed_connectors": "{{vars.result.data}}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "100",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "38f48c8e-bcee-466d-b53c-1ab83f7cfef5",
+            "id": 14353
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Compute Upgradable Connectors",
+            "description": null,
+            "arguments": {
+                "__temp2": "#Parses installed connectors and compares its version with the one from the update website#\n{%for entry in vars.installed_connectors.data%}\n{%if entry.name in vars.latest_versions%}\n{%if entry.version not in vars.latest_versions[entry.name]%}\n{{vars.upgradable_connectors.append({'name':entry.label,'current_version':entry.version,'upgrade_version':vars.latest_versions[entry.name]})}}\n{%endif%}\n{%endif%}\n{%endfor%}"
+            },
+            "status": null,
+            "top": "570",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "5704c864-f6f7-4127-99f6-7d2f6aa9bebd",
+            "id": 14352
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Configuration",
+            "description": null,
+            "arguments": {
+                "latest_versions": "{}",
+                "recipient_email": "{{globalVars.Default_Email}}",
+                "configured_connectors": "False",
+                "upgradable_connectors": "[]"
+            },
+            "status": null,
+            "top": "165",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "5f3c0b46-8633-4ac5-8779-15006e79d372",
+            "id": 14356
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Process New Versions",
+            "description": null,
+            "arguments": {
+                "__temp0": "{%for k,v in vars.connectors_json.items()%}\n{{vars.latest_versions.update({v.name:v.version})}}\n{%endfor%}"
+            },
+            "status": null,
+            "top": "435",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/04d0cf46-b6a8-42c4-8683-60a7eaa69e8f",
+            "uuid": "79f3d0aa-0059-4ddd-8dfd-5bf029e7b0b8",
+            "id": 14351
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Send Email Notification",
+            "description": null,
+            "arguments": {
+                "config": "88c3d39c-2fa9-4731-b00d-29815008f17c",
+                "params": {
+                    "cc": "",
+                    "to": "{{vars.recipient_email}}",
+                    "bcc": "",
+                    "from": "",
+                    "type": "Manual Input",
+                    "content": "<p>{{vars.email_body}}<\/p>",
+                    "subject": "FortiSOAR upgradable integrations report",
+                    "iri_list": "",
+                    "body_type": "Rich Text",
+                    "file_name": "",
+                    "file_path": ""
+                },
+                "version": "2.4.1",
+                "from_str": "admin@example.com",
+                "connector": "smtp",
+                "operation": "send_email_new",
+                "operationTitle": "Send Email",
+                "step_variables": []
+            },
+            "status": null,
+            "top": "840",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/4c0019b2-055c-44d0-968c-678a0c2d762e",
+            "uuid": "b1f5ecab-2ab9-4d4c-99d5-9c4b513a862f",
+            "id": 14357
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Get Latest Connectors Updates",
+            "description": null,
+            "arguments": {
+                "params": {
+                    "url": "https:\/\/update.cybersponse.com\/connectors\/info\/connectors.json",
+                    "body": "",
+                    "method": "GET",
+                    "params": "",
+                    "verify": true,
+                    "headers": "",
+                    "password": "",
+                    "username": "",
+                    "auth_config": ""
+                },
+                "version": "3.2.0",
+                "connector": "cyops_utilities",
+                "operation": "api_call",
+                "operationTitle": "Utils: Make REST API Call",
+                "step_variables": {
+                    "connectors_json": "{{vars.result.data}}"
+                }
+            },
+            "status": null,
+            "top": "300",
+            "left": "500",
+            "stepType": "\/api\/3\/workflow_step_types\/0109f35d-090b-4a2b-bd8a-94cbc3508562",
+            "uuid": "dd340223-c989-4f32-bb99-6cef0f0646d5",
+            "id": 14354
+        },
+        {
+            "@type": "WorkflowStep",
+            "name": "Start",
+            "description": null,
+            "arguments": {
+                "route": "10d2f7f1-ad4f-4d6f-ad31-f4290d183540",
+                "resources": [
+                    "alerts"
+                ],
+                "inputVariables": [],
+                "step_variables": {
+                    "input": {
+                        "params": [],
+                        "records": "{{vars.input.records}}"
+                    }
+                },
+                "displayConditions": {
+                    "alerts": {
+                        "sort": [],
+                        "limit": 30,
+                        "logic": "AND",
+                        "filters": []
+                    }
+                },
+                "executeButtonText": "Execute",
+                "noRecordExecution": true,
+                "singleRecordExecution": false
+            },
+            "status": null,
+            "top": "30",
+            "left": "300",
+            "stepType": "\/api\/3\/workflow_step_types\/f414d039-bb0d-4e59-9c39-a8f1e880b18a",
+            "uuid": "e465a6c8-dd73-45f2-95d3-91b0164cde49",
+            "id": 14355
+        }
+    ],
+    "routes": [
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Get Latest Connectors Updates",
+            "targetStep": "\/api\/3\/workflow_steps\/dd340223-c989-4f32-bb99-6cef0f0646d5",
+            "sourceStep": "\/api\/3\/workflow_steps\/5f3c0b46-8633-4ac5-8779-15006e79d372",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "22dc7389-6233-4e13-88df-a03e81dcc46d"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute Upgradable Connectors -> Compute Email Body",
+            "targetStep": "\/api\/3\/workflow_steps\/07661060-733b-41f5-aba9-3520b8c03f89",
+            "sourceStep": "\/api\/3\/workflow_steps\/5704c864-f6f7-4127-99f6-7d2f6aa9bebd",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "46e2a499-fc7d-4380-a482-b64bd7632120"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute Email Body -> Send Email Notification",
+            "targetStep": "\/api\/3\/workflow_steps\/b1f5ecab-2ab9-4d4c-99d5-9c4b513a862f",
+            "sourceStep": "\/api\/3\/workflow_steps\/07661060-733b-41f5-aba9-3520b8c03f89",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "5afce146-d03d-448e-af67-655f1651775a"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Installed Connectors -> Compute New Versions",
+            "targetStep": "\/api\/3\/workflow_steps\/79f3d0aa-0059-4ddd-8dfd-5bf029e7b0b8",
+            "sourceStep": "\/api\/3\/workflow_steps\/38f48c8e-bcee-466d-b53c-1ab83f7cfef5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b272080a-8f18-472f-a8f5-7ed1b340a1a4"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Get Latest Connectors Updates -> Compute New Versions",
+            "targetStep": "\/api\/3\/workflow_steps\/79f3d0aa-0059-4ddd-8dfd-5bf029e7b0b8",
+            "sourceStep": "\/api\/3\/workflow_steps\/dd340223-c989-4f32-bb99-6cef0f0646d5",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b325de39-5075-4e9e-96bd-570cb38d7c4b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Start -> Configuration",
+            "targetStep": "\/api\/3\/workflow_steps\/5f3c0b46-8633-4ac5-8779-15006e79d372",
+            "sourceStep": "\/api\/3\/workflow_steps\/e465a6c8-dd73-45f2-95d3-91b0164cde49",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b628a01c-b807-408b-94f9-b55d61366be7"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Compute New Versions -> Copy  of Compute New Versions",
+            "targetStep": "\/api\/3\/workflow_steps\/5704c864-f6f7-4127-99f6-7d2f6aa9bebd",
+            "sourceStep": "\/api\/3\/workflow_steps\/79f3d0aa-0059-4ddd-8dfd-5bf029e7b0b8",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "b65e98f2-d04b-4893-a31d-76b316148e2b"
+        },
+        {
+            "@type": "WorkflowRoute",
+            "name": "Configuration -> Get Installed Connectors",
+            "targetStep": "\/api\/3\/workflow_steps\/38f48c8e-bcee-466d-b53c-1ab83f7cfef5",
+            "sourceStep": "\/api\/3\/workflow_steps\/5f3c0b46-8633-4ac5-8779-15006e79d372",
+            "label": null,
+            "isExecuted": false,
+            "uuid": "e05eff05-8ebc-4aa8-8dfd-84ec959c4c0f"
+        }
+    ],
+    "priority": "\/api\/3\/picklists\/2b563c61-ae2c-41c0-a85a-c9709585e3f2",
+    "uuid": "7abdadf2-4800-471a-a31d-c9de901e6df6",
+    "recordTags": [
+        "Utility"
+    ],
+    "id": 2647,
+    "createUser": "\/api\/3\/people\/3451141c-bac6-467c-8d72-85e0fab569ce",
+    "createDate": 1643967400,
+    "modifyUser": "\/api\/3\/people\/3451141c-bac6-467c-8d72-85e0fab569ce",
+    "modifyDate": 1643967400,
+    "owners": [],
+    "isPrivate": false
+}

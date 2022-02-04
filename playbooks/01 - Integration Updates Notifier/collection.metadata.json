@@ -1,0 +1,15 @@
+{
+    "@context": "\/api\/3\/contexts\/WorkflowCollection",
+    "@type": "WorkflowCollection",
+    "name": "01 - Integration Updates Notifier",
+    "description": "New connectors version availability notifier",
+    "visible": true,
+    "image": null,
+    "uuid": "9483fc47-005c-4f2b-970f-60e077789cf7",
+    "id": 233,
+    "createUser": "\/api\/3\/people\/3451141c-bac6-467c-8d72-85e0fab569ce",
+    "createDate": 1643967400,
+    "modifyUser": "\/api\/3\/people\/3451141c-bac6-467c-8d72-85e0fab569ce",
+    "modifyDate": 1643967400,
+    "recordTags": []
+}
