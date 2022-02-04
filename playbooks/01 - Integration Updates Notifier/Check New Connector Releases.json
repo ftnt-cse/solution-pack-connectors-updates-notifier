@@ -76,7 +76,7 @@
             "arguments": {
                 "latest_versions": "{}",
                 "recipient_email": "{{globalVars.Default_Email}}",
-                "configured_connectors": "False",
+                "configured_connectors": "True",
                 "upgradable_connectors": "[]"
             },
             "status": null,
